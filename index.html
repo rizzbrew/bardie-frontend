@@ -1,23 +1,46 @@
 <!doctype html>
-<html>
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="https://www.gstatic.com/lamda/images/favicon_v1_150160cddff7f294ce30.svg">
+  <meta name="description" content="Gemini Reversed – simple client untuk eksperimen prompt & analisis gambar">
+  <meta name="theme-color" content="#0ea5a3">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.2/dist/purify.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
-  <title>Bardie API Client</title>
-  <style>body{font-family:'Inter',sans-serif;}</style>
+  <title>Gemini Reversed</title>
+  <style>
+    body{font-family:'Inter',sans-serif;}
+    #toast.show{animation:fadeSlide 0.4s ease forwards;}
+    @keyframes fadeSlide{
+      from{opacity:0;transform:translateY(-10px);}
+      to{opacity:1;transform:translateY(0);}
+    }
+    @keyframes glow {
+      0%,100% { text-shadow:0 0 4px #0ea5a3,0 0 8px #06b6d4; }
+      50% { text-shadow:0 0 8px #0ea5a3,0 0 16px #06b6d4; }
+    }
+    .animate-glow { animation: glow 2s infinite; }
+  </style>
 </head>
 <body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
+
   <!-- Toast -->
-  <div id="toast" class="fixed top-5 right-5 z-50 hidden bg-red-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm font-semibold"></div>
+  <div id="toast" class="fixed top-5 right-5 z-50 hidden bg-cyan-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm font-semibold flex items-center gap-2">
+    <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 17h.01M21 12A9 9 0 113 12a9 9 0 0118 0z" />
+    </svg>
+    <span id="toastMsg"></span>
+  </div>
 
+  <!-- Main Card -->
   <div class="backdrop-blur-2xl bg-white/10 border border-white/20 shadow-2xl rounded-3xl p-8 max-w-lg w-full">
-    <h1 class="text-3xl font-bold text-white mb-6 text-center tracking-tight">✨ Bardie API Client ✨</h1>
-
+    <h1 class="text-3xl font-bold text-white mb-6 text-center tracking-tight">Gemini Reversed</h1>
     <form id="bardieForm" class="space-y-5">
       <textarea id="ask" placeholder="Enter your prompt..."
-        class="w-full p-4 rounded-2xl bg-white/20 border border-white/30 text-white font-semibold placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+        class="w-full p-4 rounded-2xl bg-white/8 border border-white/30 text-white font-semibold placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400"
         rows="3"></textarea>
 
       <div class="flex gap-6 text-white font-semibold justify-center">
@@ -47,7 +70,7 @@
     </form>
   </div>
 
-  <!-- Popup Modal -->
+  <!-- Popup Modal (Result) -->
   <div id="popup" class="fixed inset-0 bg-black/70 flex items-center justify-center hidden">
     <div id="popupContent" class="bg-white rounded-3xl shadow-2xl max-w-lg w-11/12 p-6 transform opacity-0 translate-y-10 transition-all duration-300">
       <div id="popupBody" class="mb-6 text-slate-800 font-semibold"></div>
@@ -57,6 +80,37 @@
       </button>
     </div>
   </div>
+
+  <!-- Popup 1 (Figurine Prompt) -->
+  <div id="welcomePopup" class="fixed inset-0 bg-black/70 flex items-center justify-center">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-11/12 p-6 text-center transform transition-all">
+      <h2 class="text-xl font-bold text-slate-800 mb-4">Figurine Character Prompt</h2>
+      <img src="https://raw.githubusercontent.com/rizzbrew/mystorg/refs/heads/main/8dbf6ebd-8a28-4128-801a-1bb94c816c49.png" alt="preview" class="rounded-2xl mx-auto mb-4 shadow" />
+      <p class="text-slate-700 text-sm mb-6">Prompt ini sedang populer! Klik "Coba" untuk mengisi prompt secara otomatis.</p>
+      <div class="flex gap-4 justify-center">
+        <button id="usePrompt" class="flex-1 py-3 px-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-cyan-600 text-white font-bold hover:from-cyan-600 hover:to-cyan-700 transition">Coba</button>
+        <button id="skipPrompt" class="flex-1 py-3 px-4 rounded-2xl bg-slate-500 text-white font-bold hover:bg-slate-600 transition">Tidak</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Popup 2 (Intro Once) -->
+  <div id="introPopup" class="fixed inset-0 bg-black/70 flex items-center justify-center hidden">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-11/12 p-6 text-slate-700 transform transition-all">
+      <h2 class="text-lg font-bold mb-4 text-slate-900">Info Mode</h2>
+      <ul class="space-y-3 text-sm mb-6">
+        <li><strong>Text Only:</strong> kirim prompt teks saja, seperti chat.</li>
+        <li><strong>With Image:</strong> bisa analisis gambar & juga generate gambar baru dari prompt.</li>
+      </ul>
+      <button id="understandBtn" class="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-cyan-600 text-white font-bold hover:from-cyan-600 hover:to-cyan-700 transition">Paham</button>
+    </div>
+  </div>
+
+  <!-- Footer Credits -->
+<div class="fixed bottom-2 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-3xl backdrop-blur-xl bg-white/8 border border-white/30 text-white font-semibold flex gap-2 justify-center items-center text-xs cursor-default animate-glow">
+  <a href="https://rizzy.eu.org" target="_blank" class="hover:text-cyan-300 transition">Made By RizzyFuzz</a>
+</div>
+
 
   <script>
     const form = document.getElementById("bardieForm");
@@ -71,22 +125,30 @@
     const btnText = document.getElementById("btnText");
     const btnSpinner = document.getElementById("btnSpinner");
     const toast = document.getElementById("toast");
+    const toastMsg = document.getElementById("toastMsg");
+    const welcomePopup = document.getElementById("welcomePopup");
+    const usePrompt = document.getElementById("usePrompt");
+    const skipPrompt = document.getElementById("skipPrompt");
+    const introPopup = document.getElementById("introPopup");
+    const understandBtn = document.getElementById("understandBtn");
 
-    // toggle input file
     document.querySelectorAll("input[name='method']").forEach((el) => {
       el.addEventListener("change", (e) => {
-        if (e.target.value === "image") {
-          imageField.classList.remove("hidden");
-        } else {
-          imageField.classList.add("hidden");
-        }
+        e.target.value === "image" ? imageField.classList.remove("hidden") : imageField.classList.add("hidden");
       });
     });
 
     function showToast(msg) {
-      toast.textContent = msg;
+      toastMsg.textContent = msg;
       toast.classList.remove("hidden");
-      setTimeout(() => toast.classList.add("hidden"), 2500);
+      toast.classList.add("show");
+      setTimeout(() => {
+        toast.classList.add("opacity-0");
+        setTimeout(() => {
+          toast.classList.add("hidden");
+          toast.classList.remove("show","opacity-0");
+        }, 300);
+      }, 2500);
     }
 
     function readFileAsDataURL(file) {
@@ -98,44 +160,25 @@
       });
     }
 
-    // deteksi apakah link adalah gambar yang boleh dirender
-    function isImageUrl(url) {
-      return /^https:\/\/lh3\.googleusercontent\.com\/rd-gg-dl\//.test(url)
-             || /\.(jpe?g|png|gif|webp)$/i.test(url);
-    }
-
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-
       const method = document.querySelector("input[name='method']:checked").value;
       const prompt = askInput.value.trim();
+      if (!prompt) { showToast("Masukkan prompt terlebih dahulu"); return; }
+      if (method === "image" && !imageInput.files[0]) { showToast("Upload gambar terlebih dahulu"); return; }
 
-      if (!prompt) {
-        showToast("Masukkan prompt terlebih dahulu");
-        return;
-      }
-      if (method === "image") {
-        const file = imageInput.files[0];
-        if (!file) {
-          showToast("Upload gambar terlebih dahulu");
-          return;
-        }
-        if (!file.type.startsWith("image/")) {
-          showToast("File harus berupa gambar");
-          return;
-        }
-      }
-
-      sendBtn.disabled = true;
-      btnText.textContent = "Loading...";
-      btnSpinner.classList.remove("hidden");
+      sendBtn.disabled = true; btnText.textContent = "Loading..."; btnSpinner.classList.remove("hidden");
 
       let payload = { ask: prompt, preview: false };
       if (method === "image" && imageInput.files[0]) {
         const dataUrl = await readFileAsDataURL(imageInput.files[0]);
         payload.image = dataUrl.split(',')[1];
       }
-
+      
+      function isImageUrl(url) {
+        return /^https:\/\/lh3\.googleusercontent\.com\/rd-gg-dl\//.test(url)
+      }
+    
       try {
         const res = await fetch("https://rizzlogy-bardie-api.hf.space/backend/conversation", {
           method: "POST",
@@ -143,27 +186,50 @@
           body: JSON.stringify(payload),
         });
         const data = await res.json();
-
+        
         if (data && data.content && isImageUrl(data.content)) {
-          popupBody.innerHTML = `<img src="${data.content}" alt="Result" class="rounded-2xl w-full shadow-md" />`;
+          popupBody.innerHTML = `
+            <div class="w-full max-h-[40vh] overflow-auto rounded-2xl shadow-md">
+              <img src="${data.content}" alt="Result" class="w-full h-auto rounded-2xl"/>
+            </div>`;
         } else {
-          popupBody.innerHTML = `<p class="text-slate-700 font-semibold">Tidak ada gambar untuk ditampilkan</p>`;
+          popupBody.innerHTML = `
+            <div class="w-full p-4 rounded-2xl border border-slate-300 bg-slate-100 text-slate-800 font-normal overflow-y-auto"
+                 style="max-height:12rem; min-height:6rem;">
+              ${DOMPurify.sanitize(marked.parseInline(data.content) || "No result")}
+            </div>
+          `;
         }
-
+        
         popup.classList.remove("hidden");
         setTimeout(() => popupContent.classList.remove("opacity-0", "translate-y-10"), 20);
-      } catch (err) {
-        showToast("Gagal terhubung ke server");
-      }
+      } catch { showToast("Gagal terhubung ke server"); }
 
-      sendBtn.disabled = false;
-      btnText.textContent = "Send";
-      btnSpinner.classList.add("hidden");
+      sendBtn.disabled = false; btnText.textContent = "Send"; btnSpinner.classList.add("hidden");
     });
 
     closePopup.addEventListener("click", () => {
       popupContent.classList.add("opacity-0", "translate-y-10");
       setTimeout(() => popup.classList.add("hidden"), 300);
+    });
+
+    usePrompt.addEventListener("click", () => {
+      askInput.value = "Using the model, create a 1/7 scale commercialized figurine of the characters in the picture, in a realistic style, in a real environment. The figurine is placed on a computer desk. The figurine has a round transparent acrylic base, with no text on the base. The content on the computer screen is the Zbrush modeling process of this figurine. Next to the computer screen is a BANDAI-style toy packaging box printed with the original artwork. The packaging features two-dimensional flat illustrations.";
+      document.querySelector("input[name='method'][value='image']").checked = true;
+      imageField.classList.remove("hidden");
+      welcomePopup.classList.add("hidden");
+      if (!localStorage.getItem("introSeen")) introPopup.classList.remove("hidden");
+    });
+
+    skipPrompt.addEventListener("click", () => {
+      welcomePopup.classList.add("hidden");
+      showToast("Figurine Prompt dilewati");
+    });
+
+    understandBtn.addEventListener("click", () => {
+      introPopup.classList.add("hidden");
+      localStorage.setItem("introSeen", "yes");
+      showToast("Figurine Character Prompt siap dipakai 🚀");
     });
   </script>
 </body>
