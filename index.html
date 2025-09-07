@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="id">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="https://www.gstatic.com/lamda/images/favicon_v1_150160cddff7f294ce30.svg">
-  <meta name="description" content="Gemini Reversed – simple client untuk eksperimen prompt & analisis gambar">
+  <meta name="description" content="Gemini Reversed">
   <meta name="theme-color" content="#0ea5a3">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.2/dist/purify.min.js"></script>
@@ -55,8 +55,9 @@
       </div>
 
       <div id="imageField" class="hidden">
-        <input type="file" id="image" accept="image/*"
+        <input type="file" id="image" accept="image/*" multiple
           class="block w-full text-sm text-white font-semibold file:mr-3 file:py-2 file:px-5 file:rounded-xl file:border-0 file:font-semibold file:bg-cyan-500 file:text-white hover:file:bg-cyan-600 cursor-pointer" />
+        <p class="text-white text-xs mt-1">Max 5 images</p>
       </div>
 
       <button type="submit" id="sendBtn"
@@ -81,156 +82,135 @@
     </div>
   </div>
 
-  <!-- Popup 1 (Figurine Prompt) -->
-  <div id="welcomePopup" class="fixed inset-0 bg-black/70 flex items-center justify-center">
-    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-11/12 p-6 text-center transform transition-all">
-      <h2 class="text-xl font-bold text-slate-800 mb-4">Figurine Character Prompt</h2>
-      <img src="https://raw.githubusercontent.com/rizzbrew/mystorg/refs/heads/main/8dbf6ebd-8a28-4128-801a-1bb94c816c49.png" alt="preview" class="rounded-2xl mx-auto mb-4 shadow" />
-      <p class="text-slate-700 text-sm mb-6">Prompt ini sedang populer! Klik "Coba" untuk mengisi prompt secara otomatis.</p>
-      <div class="flex gap-4 justify-center">
-        <button id="usePrompt" class="flex-1 py-3 px-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-cyan-600 text-white font-bold hover:from-cyan-600 hover:to-cyan-700 transition">Coba</button>
-        <button id="skipPrompt" class="flex-1 py-3 px-4 rounded-2xl bg-slate-500 text-white font-bold hover:bg-slate-600 transition">Tidak</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Popup 2 (Intro Once) -->
-  <div id="introPopup" class="fixed inset-0 bg-black/70 flex items-center justify-center hidden">
-    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-11/12 p-6 text-slate-700 transform transition-all">
-      <h2 class="text-lg font-bold mb-4 text-slate-900">Info Mode</h2>
-      <ul class="space-y-3 text-sm mb-6">
-        <li><strong>Text Only:</strong> kirim prompt teks saja, seperti chat.</li>
-        <li><strong>With Image:</strong> bisa analisis gambar & juga generate gambar baru dari prompt.</li>
-      </ul>
-      <button id="understandBtn" class="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-cyan-600 text-white font-bold hover:from-cyan-600 hover:to-cyan-700 transition">Paham</button>
-    </div>
-  </div>
-
   <!-- Footer Credits -->
-<div class="fixed bottom-2 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-3xl backdrop-blur-xl bg-white/8 border border-white/30 text-white font-semibold flex gap-2 justify-center items-center text-xs cursor-default animate-glow">
-  <a href="https://rizzy.eu.org" target="_blank" class="hover:text-cyan-300 transition">Made By RizzyFuzz</a>
-</div>
+  <div class="fixed bottom-2 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-3xl backdrop-blur-xl bg-white/8 border border-white/30 text-white font-semibold flex gap-2 justify-center items-center text-xs cursor-default animate-glow">
+    <a href="https://rizzy.eu.org" target="_blank" class="hover:text-cyan-300 transition">Made By RizzyFuzz</a>
+  </div>
 
+<script>
+const form = document.getElementById("bardieForm");
+const askInput = document.getElementById("ask");
+const imageField = document.getElementById("imageField");
+const imageInput = document.getElementById("image");
+const popup = document.getElementById("popup");
+const popupContent = document.getElementById("popupContent");
+const popupBody = document.getElementById("popupBody");
+const closePopup = document.getElementById("closePopup");
+const sendBtn = document.getElementById("sendBtn");
+const btnText = document.getElementById("btnText");
+const btnSpinner = document.getElementById("btnSpinner");
+const toast = document.getElementById("toast");
+const toastMsg = document.getElementById("toastMsg");
 
-  <script>
-    const form = document.getElementById("bardieForm");
-    const askInput = document.getElementById("ask");
-    const imageField = document.getElementById("imageField");
-    const imageInput = document.getElementById("image");
-    const popup = document.getElementById("popup");
-    const popupContent = document.getElementById("popupContent");
-    const popupBody = document.getElementById("popupBody");
-    const closePopup = document.getElementById("closePopup");
-    const sendBtn = document.getElementById("sendBtn");
-    const btnText = document.getElementById("btnText");
-    const btnSpinner = document.getElementById("btnSpinner");
-    const toast = document.getElementById("toast");
-    const toastMsg = document.getElementById("toastMsg");
-    const welcomePopup = document.getElementById("welcomePopup");
-    const usePrompt = document.getElementById("usePrompt");
-    const skipPrompt = document.getElementById("skipPrompt");
-    const introPopup = document.getElementById("introPopup");
-    const understandBtn = document.getElementById("understandBtn");
+document.querySelectorAll("input[name='method']").forEach(el => {
+  el.addEventListener("change", e => {
+    e.target.value === "image" ? imageField.classList.remove("hidden") : imageField.classList.add("hidden");
+  });
+});
 
-    document.querySelectorAll("input[name='method']").forEach((el) => {
-      el.addEventListener("change", (e) => {
-        e.target.value === "image" ? imageField.classList.remove("hidden") : imageField.classList.add("hidden");
-      });
+function showToast(msg) {
+  toastMsg.textContent = msg;
+  toast.classList.remove("hidden");
+  toast.classList.add("show");
+  setTimeout(() => {
+    toast.classList.add("opacity-0");
+    setTimeout(() => {
+      toast.classList.add("hidden");
+      toast.classList.remove("show","opacity-0");
+    }, 300);
+  }, 2500);
+}
+
+function readFileAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(file);
+  });
+}
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const method = document.querySelector("input[name='method']:checked").value;
+  const prompt = askInput.value.trim();
+  if (!prompt) { showToast("Please enter a prompt"); return; }
+
+  let files = [];
+  if (method === "image") {
+    files = Array.from(imageInput.files);
+    if (files.length === 0) { showToast("Upload at least one image"); return; }
+    if (files.length > 5) { showToast("You can upload up to 5 images only"); return; }
+  }
+
+  sendBtn.disabled = true; btnText.textContent = "Loading..."; btnSpinner.classList.remove("hidden");
+
+  let payload = { ask: prompt, preview: false };
+  if (method === "image") {
+    payload.images = await Promise.all(files.map(async file => {
+      const dataUrl = await readFileAsDataURL(file);
+      return dataUrl.split(',')[1]; // base64
+    }));
+  }
+
+  try {
+    const res = await fetch("https://rizzlogy-bardie-api.hf.space/backend/conversation", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify(payload),
     });
+    const data = await res.json();
 
-    function showToast(msg) {
-      toastMsg.textContent = msg;
-      toast.classList.remove("hidden");
-      toast.classList.add("show");
-      setTimeout(() => {
-        toast.classList.add("opacity-0");
-        setTimeout(() => {
-          toast.classList.add("hidden");
-          toast.classList.remove("show","opacity-0");
-        }, 300);
-      }, 2500);
+    popupBody.innerHTML = "";
+
+    if (data && data.images && data.images.length > 0) {
+      for (let idx = 0; idx < data.images.length; idx++) {
+        const imgUrl = data.images[idx].url;
+        const container = document.createElement("div");
+        container.className = "mb-4";
+
+        const imageEl = document.createElement("img");
+        imageEl.src = imgUrl;
+        imageEl.alt = `Result ${idx+1}`;
+        imageEl.className = "w-full h-auto rounded-2xl shadow-md";
+
+        // Fetch the image to create a safe download link
+        const response = await fetch(imgUrl);
+        const blob = await response.blob();
+        const downloadUrl = URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = downloadUrl;
+        link.download = `result-${idx+1}.png`;
+        link.textContent = "Download";
+        link.className = "block mt-2 text-center text-cyan-600 font-semibold hover:underline";
+
+        container.appendChild(imageEl);
+        container.appendChild(link);
+        popupBody.appendChild(container);
+      }
+    } else {
+      popupBody.innerHTML = `
+        <div class="w-full p-4 rounded-2xl border border-slate-300 bg-slate-100 text-slate-800 font-normal overflow-y-auto"
+             style="max-height:12rem; min-height:6rem;">
+          ${DOMPurify.sanitize(marked.parseInline(data.content) || "No result")}
+        </div>
+      `;
     }
 
-    function readFileAsDataURL(file) {
-      return new Promise((resolve, reject) => {
-        const r = new FileReader();
-        r.onload = () => resolve(r.result);
-        r.onerror = () => reject(r.error);
-        r.readAsDataURL(file);
-      });
-    }
+    popup.classList.remove("hidden");
+    setTimeout(() => popupContent.classList.remove("opacity-0", "translate-y-10"), 20);
+  } catch {
+    showToast("Failed to connect to server");
+  }
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const method = document.querySelector("input[name='method']:checked").value;
-      const prompt = askInput.value.trim();
-      if (!prompt) { showToast("Masukkan prompt terlebih dahulu"); return; }
-      if (method === "image" && !imageInput.files[0]) { showToast("Upload gambar terlebih dahulu"); return; }
+  sendBtn.disabled = false; btnText.textContent = "Send"; btnSpinner.classList.add("hidden");
+});
 
-      sendBtn.disabled = true; btnText.textContent = "Loading..."; btnSpinner.classList.remove("hidden");
-
-      let payload = { ask: prompt, preview: false };
-      if (method === "image" && imageInput.files[0]) {
-        const dataUrl = await readFileAsDataURL(imageInput.files[0]);
-        payload.image = dataUrl.split(',')[1];
-      }
-      
-      function isImageUrl(url) {
-        return /^https:\/\/lh3\.googleusercontent\.com\/rd-gg-dl\//.test(url)
-      }
-    
-      try {
-        const res = await fetch("https://rizzlogy-bardie-api.hf.space/backend/conversation", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Accept": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json();
-        
-        if (data && data.content && isImageUrl(data.content)) {
-          popupBody.innerHTML = `
-            <div class="w-full max-h-[40vh] overflow-auto rounded-2xl shadow-md">
-              <img src="${data.content}" alt="Result" class="w-full h-auto rounded-2xl"/>
-            </div>`;
-        } else {
-          popupBody.innerHTML = `
-            <div class="w-full p-4 rounded-2xl border border-slate-300 bg-slate-100 text-slate-800 font-normal overflow-y-auto"
-                 style="max-height:12rem; min-height:6rem;">
-              ${DOMPurify.sanitize(marked.parseInline(data.content) || "No result")}
-            </div>
-          `;
-        }
-        
-        popup.classList.remove("hidden");
-        setTimeout(() => popupContent.classList.remove("opacity-0", "translate-y-10"), 20);
-      } catch { showToast("Gagal terhubung ke server"); }
-
-      sendBtn.disabled = false; btnText.textContent = "Send"; btnSpinner.classList.add("hidden");
-    });
-
-    closePopup.addEventListener("click", () => {
-      popupContent.classList.add("opacity-0", "translate-y-10");
-      setTimeout(() => popup.classList.add("hidden"), 300);
-    });
-
-    usePrompt.addEventListener("click", () => {
-      askInput.value = "Using the model, create a 1/7 scale commercialized figurine of the characters in the picture, in a realistic style, in a real environment. The figurine is placed on a computer desk. The figurine has a round transparent acrylic base, with no text on the base. The content on the computer screen is the Zbrush modeling process of this figurine. Next to the computer screen is a BANDAI-style toy packaging box printed with the original artwork. The packaging features two-dimensional flat illustrations.";
-      document.querySelector("input[name='method'][value='image']").checked = true;
-      imageField.classList.remove("hidden");
-      welcomePopup.classList.add("hidden");
-      if (!localStorage.getItem("introSeen")) introPopup.classList.remove("hidden");
-    });
-
-    skipPrompt.addEventListener("click", () => {
-      welcomePopup.classList.add("hidden");
-      showToast("Figurine Prompt dilewati");
-    });
-
-    understandBtn.addEventListener("click", () => {
-      introPopup.classList.add("hidden");
-      localStorage.setItem("introSeen", "yes");
-      showToast("Figurine Character Prompt siap dipakai 🚀");
-    });
-  </script>
+closePopup.addEventListener("click", () => {
+  popupContent.classList.add("opacity-0", "translate-y-10");
+  setTimeout(() => popup.classList.add("hidden"), 300);
+});
+</script>
 </body>
 </html>
