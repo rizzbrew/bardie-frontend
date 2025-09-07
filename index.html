@@ -197,20 +197,16 @@
 
         if (data && data.content && isImageUrl(data.content)) {
           try {
-            const imgResp = await fetch(data.content);
-            const imgBlob = await imgResp.blob();
-            const imgURL = URL.createObjectURL(imgBlob);
-
             popupBody.innerHTML = `
               <div class="w-full max-h-[40vh] overflow-auto rounded-2xl shadow-md mb-4">
-                <img src="${imgURL}" alt="Result" class="w-full h-auto rounded-2xl"/>
+                <img src="${data.content}" alt="Result Generate Image" class="w-full h-auto rounded-2xl"/>
               </div>
-              <a href="${imgURL}" download="generated-image.png"
+              <a href="${data.content}" download="generated-image.png"
                  class="w-full block py-2 px-4 text-center bg-cyan-500 text-white font-bold rounded-2xl hover:bg-cyan-600 transition">
                 Download Image
               </a>`;
           } catch(e) {
-            popupBody.innerHTML = `<div class="text-red-500 font-bold">Failed to download image</div>`;
+            popupBody.innerHTML = `<div class="text-red-500 font-bold">Failed To Load Image, Try Again later.</div>`;
           }
         } else {
           popupBody.innerHTML = `
