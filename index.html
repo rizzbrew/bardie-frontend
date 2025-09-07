@@ -82,6 +82,31 @@
     </div>
   </div>
 
+  <!-- Popup 1 (Figurine Prompt) -->
+  <div id="welcomePopup" class="fixed inset-0 bg-black/70 flex items-center justify-center">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-11/12 p-6 text-center transform transition-all">
+      <h2 class="text-xl font-bold text-slate-800 mb-4">Figurine Character Prompt</h2>
+      <img src="https://raw.githubusercontent.com/rizzbrew/mystorg/refs/heads/main/8dbf6ebd-8a28-4128-801a-1bb94c816c49.png" alt="preview" class="rounded-2xl mx-auto mb-4 shadow" />
+      <p class="text-slate-700 text-sm mb-6">Prompt ini sedang populer! Klik "Coba" untuk mengisi prompt secara otomatis.</p>
+      <div class="flex gap-4 justify-center">
+        <button id="usePrompt" class="flex-1 py-3 px-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-cyan-600 text-white font-bold hover:from-cyan-600 hover:to-cyan-700 transition">Coba</button>
+        <button id="skipPrompt" class="flex-1 py-3 px-4 rounded-2xl bg-slate-500 text-white font-bold hover:bg-slate-600 transition">Tidak</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Popup 2 (Intro Once) -->
+  <div id="introPopup" class="fixed inset-0 bg-black/70 flex items-center justify-center hidden">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-11/12 p-6 text-slate-700 transform transition-all">
+      <h2 class="text-lg font-bold mb-4 text-slate-900">Info Mode</h2>
+      <ul class="space-y-3 text-sm mb-6">
+        <li><strong>Text Only:</strong> kirim prompt teks saja, seperti chat.</li>
+        <li><strong>With Image:</strong> bisa analisis gambar & juga generate gambar baru dari prompt.</li>
+      </ul>
+      <button id="understandBtn" class="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-cyan-600 text-white font-bold hover:from-cyan-600 hover:to-cyan-700 transition">Paham</button>
+    </div>
+  </div>
+
   <!-- Footer Credits -->
   <div class="fixed bottom-2 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-3xl backdrop-blur-xl bg-white/8 border border-white/30 text-white font-semibold flex gap-2 justify-center items-center text-xs cursor-default animate-glow">
     <a href="https://rizzy.eu.org" target="_blank" class="hover:text-cyan-300 transition">Made By RizzyFuzz</a>
@@ -101,6 +126,11 @@ const btnText = document.getElementById("btnText");
 const btnSpinner = document.getElementById("btnSpinner");
 const toast = document.getElementById("toast");
 const toastMsg = document.getElementById("toastMsg");
+const welcomePopup = document.getElementById("welcomePopup");
+const usePrompt = document.getElementById("usePrompt");
+const skipPrompt = document.getElementById("skipPrompt");
+const introPopup = document.getElementById("introPopup");
+const understandBtn = document.getElementById("understandBtn");
 
 document.querySelectorAll("input[name='method']").forEach(el => {
   el.addEventListener("change", e => {
@@ -134,12 +164,12 @@ form.addEventListener("submit", async (e) => {
   e.preventDefault();
   const method = document.querySelector("input[name='method']:checked").value;
   const prompt = askInput.value.trim();
-  if (!prompt) { showToast("Please enter a prompt"); return; }
+  if (!prompt) { showToast("Masukkan prompt terlebih dahulu"); return; }
 
   let files = [];
   if (method === "image") {
     files = Array.from(imageInput.files);
-    if (files.length === 0) { showToast("Upload at least one image"); return; }
+    if (files.length === 0) { showToast("Upload gambar terlebih dahulu"); return; }
     if (files.length > 5) { showToast("You can upload up to 5 images only"); return; }
   }
 
@@ -201,7 +231,7 @@ form.addEventListener("submit", async (e) => {
     popup.classList.remove("hidden");
     setTimeout(() => popupContent.classList.remove("opacity-0", "translate-y-10"), 20);
   } catch {
-    showToast("Failed to connect to server");
+    showToast("Gagal terhubung ke server");
   }
 
   sendBtn.disabled = false; btnText.textContent = "Send"; btnSpinner.classList.add("hidden");
@@ -210,6 +240,25 @@ form.addEventListener("submit", async (e) => {
 closePopup.addEventListener("click", () => {
   popupContent.classList.add("opacity-0", "translate-y-10");
   setTimeout(() => popup.classList.add("hidden"), 300);
+});
+
+usePrompt.addEventListener("click", () => {
+  askInput.value = "Using the model, create a 1/7 scale commercialized figurine of the characters in the picture, in a realistic style, in a real environment. The figurine is placed on a computer desk. The figurine has a round transparent acrylic base, with no text on the base. The content on the computer screen is the Zbrush modeling process of this figurine. Next to the computer screen is a BANDAI-style toy packaging box printed with the original artwork. The packaging features two-dimensional flat illustrations.";
+  document.querySelector("input[name='method'][value='image']").checked = true;
+  imageField.classList.remove("hidden");
+  welcomePopup.classList.add("hidden");
+  if (!localStorage.getItem("introSeen")) introPopup.classList.remove("hidden");
+});
+
+skipPrompt.addEventListener("click", () => {
+  welcomePopup.classList.add("hidden");
+  showToast("Figurine Prompt dilewati");
+});
+
+understandBtn.addEventListener("click", () => {
+  introPopup.classList.add("hidden");
+  localStorage.setItem("introSeen", "yes");
+  showToast("Figurine Character Prompt siap dipakai 🚀");
 });
 </script>
 </body>
