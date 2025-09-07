@@ -114,7 +114,7 @@
     <a href="https://rizzy.eu.org" target="_blank" class="hover:text-cyan-300 transition">Made By RizzyFuzz</a>
   </div>
 
-  <script>
+<script>
     const form = document.getElementById("bardieForm");
     const askInput = document.getElementById("ask");
     const imageField = document.getElementById("imageField");
@@ -198,14 +198,31 @@
         const data = await res.json();
 
         if (data && data.content && isImageUrl(data.content)) {
+          // Popup image + download button
           popupBody.innerHTML = `
             <div class="w-full max-h-[40vh] overflow-auto rounded-2xl shadow-md mb-4">
-              <img src="${data.content}" alt="Result" class="w-full h-auto rounded-2xl"/>
+              <img id="resultImg" src="${data.content}" alt="Result" class="w-full h-auto rounded-2xl"/>
             </div>
-            <a href="${data.content}" download="generated-image.jpg"
-               class="w-full block py-2 px-4 text-center bg-cyan-500 text-white font-bold rounded-2xl hover:bg-cyan-600 transition">
+            <button id="downloadBtn" 
+              class="w-full py-3 px-4 text-center bg-cyan-500 text-white font-bold rounded-2xl hover:bg-cyan-600 transition">
               Download Image
-            </a>`;
+            </button>`;
+
+          const downloadBtn = document.getElementById("downloadBtn");
+          downloadBtn.addEventListener("click", async () => {
+            try {
+              const resImg = await fetch(data.content);
+              const blob = await resImg.blob();
+              const link = document.createElement("a");
+              link.href = URL.createObjectURL(blob);
+              link.download = "generated-image.jpg";
+              document.body.appendChild(link);
+              link.click();
+              link.remove();
+            } catch {
+              showToast("Failed to download image");
+            }
+          });
         } else {
           popupBody.innerHTML = `
             <div class="w-full p-4 rounded-2xl border border-slate-300 bg-slate-100 text-slate-800 font-normal overflow-y-auto"
