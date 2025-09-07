@@ -197,14 +197,18 @@
 
         if (data && data.content && isImageUrl(data.content)) {
           try {
+            // Convert thumbnail to HD
+            const hdUrl = data.content.replace(/=s\d+$/, "=s1024");
+            
             popupBody.innerHTML = `
               <div class="w-full max-h-[40vh] overflow-auto rounded-2xl shadow-md mb-4">
                 <img src="${data.content}" alt="Result Generate Image" class="w-full h-auto rounded-2xl"/>
               </div>
-              <a href="${data.content}" download="generated-image.png"
-                 class="w-full block py-2 px-4 text-center bg-cyan-500 text-white font-bold rounded-2xl hover:bg-cyan-600 transition">
-                Download Image
+              <a href="https://rizzlogy-bardie-api.hf.space/download-image?url=${encodeURIComponent(hdUrl)}"
+              class="w-full block py-2 px-4 text-center bg-cyan-500 text-white font-bold rounded-2xl hover:bg-cyan-600 transition">
+                 Download HD Image
               </a>`;
+            
           } catch(e) {
             popupBody.innerHTML = `<div class="text-red-500 font-bold">Failed To Load Image, Try Again later.</div>`;
           }
