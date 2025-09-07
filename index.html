@@ -89,10 +89,10 @@
     <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-11/12 p-6 text-center transform transition-all">
       <h2 class="text-xl font-bold text-slate-800 mb-4">Figurine Character Prompt</h2>
       <img src="https://raw.githubusercontent.com/rizzbrew/mystorg/refs/heads/main/8dbf6ebd-8a28-4128-801a-1bb94c816c49.png" alt="preview" class="rounded-2xl mx-auto mb-4 shadow" />
-      <p class="text-slate-700 text-sm mb-6">This prompt is trending! Click "Try" to auto-fill the prompt.</p>
+      <p class="text-slate-700 text-sm mb-6">Prompt ini sedang populer! Klik "Coba" untuk mengisi prompt secara otomatis.</p>
       <div class="flex gap-4 justify-center">
-        <button id="usePrompt" class="flex-1 py-3 px-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-cyan-600 text-white font-bold hover:from-cyan-600 hover:to-cyan-700 transition">Try</button>
-        <button id="skipPrompt" class="flex-1 py-3 px-4 rounded-2xl bg-slate-500 text-white font-bold hover:bg-slate-600 transition">Skip</button>
+        <button id="usePrompt" class="flex-1 py-3 px-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-cyan-600 text-white font-bold hover:from-cyan-600 hover:to-cyan-700 transition">Coba</button>
+        <button id="skipPrompt" class="flex-1 py-3 px-4 rounded-2xl bg-slate-500 text-white font-bold hover:bg-slate-600 transition">Tidak</button>
       </div>
     </div>
   </div>
@@ -100,10 +100,10 @@
   <!-- Popup 2 (Intro Once) -->
   <div id="introPopup" class="fixed inset-0 bg-black/70 flex items-center justify-center hidden">
     <div class="bg-white rounded-3xl shadow-2xl max-w-md w-11/12 p-6 text-slate-700 transform transition-all">
-      <h2 class="text-lg font-bold mb-4 text-slate-900">Mode Info</h2>
+      <h2 class="text-lg font-bold mb-4 text-slate-900">Info Mode</h2>
       <ul class="space-y-3 text-sm mb-6">
-        <li><strong>Text Only:</strong> send only a text prompt.</li>
-        <li><strong>With Image:</strong> analyze images & generate new ones from the prompt.</li>
+        <li><strong>Text Only:</strong> send text prompt only, like a chat.</li>
+        <li><strong>With Image:</strong> can analyze image & generate new images from prompt.</li>
       </ul>
       <button id="understandBtn" class="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-cyan-600 text-white font-bold hover:from-cyan-600 hover:to-cyan-700 transition">Understood</button>
     </div>
@@ -166,22 +166,27 @@
       e.preventDefault();
       const method = document.querySelector("input[name='method']:checked").value;
       const prompt = askInput.value.trim();
-      if (!prompt) { showToast("Please enter a prompt"); return; }
+      if (!prompt) { showToast("Enter prompt first"); return; }
+      if (method === "image" && !imageInput.files[0]) { showToast("Upload image first"); return; }
 
       sendBtn.disabled = true; btnText.textContent = "Loading..."; btnSpinner.classList.remove("hidden");
 
       let payload = { ask: prompt, preview: false };
+      if (method === "image" && imageInput.files.length) {
+        if (imageInput.files.length > 5) {
+          showToast("Maximum 5 images allowed");
+          sendBtn.disabled = false; btnText.textContent = "Send"; btnSpinner.classList.add("hidden");
+          return;
+        }
+        payload.image = [];
+        for (let i = 0; i < imageInput.files.length; i++) {
+          const dataUrl = await readFileAsDataURL(imageInput.files[i]);
+          payload.image.push(dataUrl.split(',')[1]);
+        }
+      }
 
-      let files = [];
-      if (method === "image") {
-        files = Array.from(imageInput.files);
-        if (files.length === 0) { showToast("Please upload at least one image"); sendBtn.disabled = false; btnText.textContent="Send"; btnSpinner.classList.add("hidden"); return; }
-        if (files.length > 5) { showToast("You can upload up to 5 images only"); sendBtn.disabled = false; btnText.textContent="Send"; btnSpinner.classList.add("hidden"); return; }
-
-        payload.image = await Promise.all(files.map(async file => {
-          const dataUrl = await readFileAsDataURL(file);
-          return dataUrl.split(',')[1];
-        }));
+      function isImageUrl(url) {
+        return /^https:\/\/lh3\.googleusercontent\.com\/rd-gg-dl\//.test(url)
       }
 
       try {
@@ -192,19 +197,19 @@
         });
         const data = await res.json();
 
-        // Display result
-        if (data.images?.length) {
-          popupBody.innerHTML = "";
-          data.images.forEach((img, i) => {
-            const div = document.createElement("div");
-            div.className = "w-full mb-3 rounded-2xl shadow-md overflow-hidden";
-            div.innerHTML = `<img src="${img.url}" alt="Result ${i+1}" class="w-full h-auto rounded-2xl"/><a href="${img.url}" download class="block mt-1 text-sm text-cyan-600 hover:underline">Download</a>`;
-            popupBody.appendChild(div);
-          });
+        if (data && data.content && isImageUrl(data.content)) {
+          popupBody.innerHTML = `
+            <div class="w-full max-h-[40vh] overflow-auto rounded-2xl shadow-md mb-4">
+              <img src="${data.content}" alt="Result" class="w-full h-auto rounded-2xl"/>
+            </div>
+            <a href="${data.content}" download="generated-image.jpg"
+               class="w-full block py-2 px-4 text-center bg-cyan-500 text-white font-bold rounded-2xl hover:bg-cyan-600 transition">
+              Download Image
+            </a>`;
         } else {
           popupBody.innerHTML = `
             <div class="w-full p-4 rounded-2xl border border-slate-300 bg-slate-100 text-slate-800 font-normal overflow-y-auto"
-             style="max-height:12rem; min-height:6rem;">
+                 style="max-height:12rem; min-height:6rem;">
               ${DOMPurify.sanitize(marked.parseInline(data.content) || "No result")}
             </div>
           `;
@@ -212,9 +217,7 @@
 
         popup.classList.remove("hidden");
         setTimeout(() => popupContent.classList.remove("opacity-0", "translate-y-10"), 20);
-      } catch {
-        showToast("Failed to connect to server");
-      }
+      } catch { showToast("Failed to connect to server"); }
 
       sendBtn.disabled = false; btnText.textContent = "Send"; btnSpinner.classList.add("hidden");
     });
