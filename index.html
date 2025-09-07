@@ -196,38 +196,36 @@
       }
 
       try {
-        const res = await fetch("https://rizzlogy-bardie-api.hf.space/backend/conversation", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Accept": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json();
+          const res = await fetch("https://rizzlogy-bardie-api.hf.space/backend/conversation", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...payload, preview: true }),
+  });
 
-        if (data && data.content && isImageUrl(data.content)) {
-          try {
-            // Convert thumbnail to HD
-            const hdUrl = data.content.replace(/=s\d+$/, "=s1024");
-            
-            popupBody.innerHTML = `
-              <div class="w-full max-h-[40vh] overflow-auto rounded-2xl shadow-md mb-4">
-                <img src="${data.content}" alt="Result Generate Image" class="w-full h-auto rounded-2xl"/>
-              </div>
-              <a href="https://rizzlogy-bardie-api.hf.space/download-image?url=${encodeURIComponent(hdUrl)}"
-              class="w-full block py-2 px-4 text-center bg-cyan-500 text-white font-bold rounded-2xl hover:bg-cyan-600 transition">
-                 Download HD Image
-              </a>`;
-            
-          } catch(e) {
-            popupBody.innerHTML = `<div class="text-red-500 font-bold">Failed To Load Image, Try Again later.</div>`;
-          }
-        } else {
-          popupBody.innerHTML = `
-            <div class="w-full p-4 rounded-2xl border border-slate-300 bg-slate-100 text-slate-800 font-normal overflow-y-auto"
-                 style="max-height:12rem; min-height:6rem;">
-              ${DOMPurify.sanitize(marked.parseInline(data.content) || "No result")}
-            </div>
-          `;
-        }
+  // cek content-type
+  const contentType = res.headers.get("content-type");
+
+  if (contentType && contentType.startsWith("image/")) {
+    const blob = await res.blob();
+    const imgURL = URL.createObjectURL(blob);
+
+    popupBody.innerHTML = `
+      <div class="w-full max-h-[40vh] overflow-auto rounded-2xl shadow-md mb-4">
+        <img src="${imgURL}" alt="Result Image" class="w-full h-auto rounded-2xl"/>
+      </div>
+      <a href="${imgURL}" download="image_${Date.now()}.png"
+         class="w-full block py-2 px-4 text-center bg-cyan-500 text-white font-bold rounded-2xl hover:bg-cyan-600 transition">
+         Download HD Image
+      </a>`;
+  } else {
+    // fallback text
+    const data = await res.json();
+    popupBody.innerHTML = `
+      <div class="w-full p-4 rounded-2xl border border-slate-300 bg-slate-100 text-slate-800 font-normal overflow-y-auto"
+           style="max-height:12rem; min-height:6rem;">
+        ${DOMPurify.sanitize(marked.parseInline(data.content) || "No result")}
+      </div>`;
+  }
 
         popup.classList.remove("hidden");
         setTimeout(() => popupContent.classList.remove("opacity-0", "translate-y-10"), 20);
