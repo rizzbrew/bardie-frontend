@@ -4,11 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="https://www.gstatic.com/lamda/images/favicon_v1_150160cddff7f294ce30.svg">
-  <meta name="description" content="Experiment with prompts and image analysis using Gemini Reversed.">
+  <meta name="description" content="Gemini Reversed – simple client for prompt experiments & image analysis">
   <meta name="theme-color" content="#0ea5a3">
-  <meta property="og:title" content="Gemini Reversed" />
-  <meta property="og:description" content="Experiment with prompts and image analysis using Gemini Reversed." />
-  <meta property="og:image" content="https://www.gstatic.com/lamda/images/favicon_v1_150160cddff7f294ce30.svg" />
+  <meta name="google" content="image">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.2/dist/purify.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
@@ -114,7 +112,7 @@
     <a href="https://rizzy.eu.org" target="_blank" class="hover:text-cyan-300 transition">Made By RizzyFuzz</a>
   </div>
 
-<script>
+  <script>
     const form = document.getElementById("bardieForm");
     const askInput = document.getElementById("ask");
     const imageField = document.getElementById("imageField");
@@ -198,31 +196,22 @@
         const data = await res.json();
 
         if (data && data.content && isImageUrl(data.content)) {
-          // Popup image + download button
-          popupBody.innerHTML = `
-            <div class="w-full max-h-[40vh] overflow-auto rounded-2xl shadow-md mb-4">
-              <img id="resultImg" src="${data.content}" alt="Result" class="w-full h-auto rounded-2xl"/>
-            </div>
-            <button id="downloadBtn" 
-              class="w-full py-3 px-4 text-center bg-cyan-500 text-white font-bold rounded-2xl hover:bg-cyan-600 transition">
-              Download Image
-            </button>`;
+          try {
+            const imgResp = await fetch(data.content);
+            const imgBlob = await imgResp.blob();
+            const imgURL = URL.createObjectURL(imgBlob);
 
-          const downloadBtn = document.getElementById("downloadBtn");
-          downloadBtn.addEventListener("click", async () => {
-            try {
-              const resImg = await fetch(data.content);
-              const blob = await resImg.blob();
-              const link = document.createElement("a");
-              link.href = URL.createObjectURL(blob);
-              link.download = "generated-image.jpg";
-              document.body.appendChild(link);
-              link.click();
-              link.remove();
-            } catch {
-              showToast("Failed to download image");
-            }
-          });
+            popupBody.innerHTML = `
+              <div class="w-full max-h-[40vh] overflow-auto rounded-2xl shadow-md mb-4">
+                <img src="${imgURL}" alt="Result" class="w-full h-auto rounded-2xl"/>
+              </div>
+              <a href="${imgURL}" download="generated-image.png"
+                 class="w-full block py-2 px-4 text-center bg-cyan-500 text-white font-bold rounded-2xl hover:bg-cyan-600 transition">
+                Download Image
+              </a>`;
+          } catch(e) {
+            popupBody.innerHTML = `<div class="text-red-500 font-bold">Failed to download image</div>`;
+          }
         } else {
           popupBody.innerHTML = `
             <div class="w-full p-4 rounded-2xl border border-slate-300 bg-slate-100 text-slate-800 font-normal overflow-y-auto"
