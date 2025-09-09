@@ -348,7 +348,7 @@
           );
           const contentType = res.headers.get("content-type");
 
-          if (contentType) {
+          if (contentType && contentType.startsWith("image/")) {
             const blob = await res.blob();
             const imgURL = URL.createObjectURL(blob);
             const endTime = Date.now();
