@@ -309,9 +309,10 @@
         }
 
         sendBtn.disabled = true;
-        btnText.textContent = "Loading...";
+        btnText.textContent = "Generating...";
         btnSpinner.classList.remove("hidden");
 
+        const startTime = Date.now();
         let payload = { ask: prompt, preview: false };
         if (method === "image" && imageInput.files.length) {
           if (imageInput.files.length > 5) {
@@ -330,8 +331,7 @@
             }
             const dataUrl = await readFileAsDataURL(file);
             payload.image.push({
-              mime: file.type,
-              data: dataUrl.split(",")[1],
+              dataUrl.split(",")[1],
             });
           }
         }
@@ -351,9 +351,12 @@
           );
           const contentType = res.headers.get("content-type");
 
-          if (contentType && contentType.startsWith("image/")) {
+          if (contentType) {
             const blob = await res.blob();
             const imgURL = URL.createObjectURL(blob);
+            const endTime = Date.now();
+            const duration = ((endTime - startTime) / 1000).toFixed(2);
+            showToast(`✅ Success generating at ${duration}s`);
 
             popupBody.innerHTML = `
       <div class="w-full max-h-[40vh] overflow-auto rounded-2xl shadow-md mb-4">
@@ -365,6 +368,10 @@
       </a>`;
           } else {
             const data = await res.json();
+            const endTime = Date.now();
+            const duration = ((endTime - startTime) / 1000).toFixed(2);
+            showToast(`✅ Success generating at ${duration}s`);
+            
             popupBody.innerHTML = `
       <div class="w-full p-4 rounded-2xl border border-slate-300 bg-slate-100 text-slate-800 font-normal overflow-y-auto"
            style="max-height:12rem; min-height:6rem;">
