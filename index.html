@@ -353,7 +353,7 @@
             const imgURL = URL.createObjectURL(blob);
             const endTime = Date.now();
             const duration = ((endTime - startTime) / 1000).toFixed(2);
-            showToast(`✅ Success generating at ${duration}s`);
+            showToast(`Success generating at ${duration}s`);
 
             popupBody.innerHTML = `
       <div class="w-full max-h-[40vh] overflow-auto rounded-2xl shadow-md mb-4">
@@ -367,7 +367,7 @@
             const data = await res.json();
             const endTime = Date.now();
             const duration = ((endTime - startTime) / 1000).toFixed(2);
-            showToast(`✅ Success generating at ${duration}s`);
+            showToast(`Success generating at ${duration}s`);
             
             popupBody.innerHTML = `
       <div class="w-full p-4 rounded-2xl border border-slate-300 bg-slate-100 text-slate-800 font-normal overflow-y-auto"
