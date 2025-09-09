@@ -113,7 +113,7 @@
           <input
             type="file"
             id="image"
-            accept="image/*"
+            accept="image/png, image/jpeg, image/webp"
             multiple
             class="block w-full text-sm text-white font-semibold file:mr-3 file:py-2 file:px-5 file:rounded-xl file:border-0 file:font-semibold file:bg-cyan-500 file:text-white hover:file:bg-cyan-600 cursor-pointer"
           />
@@ -287,6 +287,12 @@
         });
       }
 
+      function resetBtn() {
+        sendBtn.disabled = false;
+        btnText.textContent = "Send";
+        btnSpinner.classList.add("hidden");
+      }
+
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const method = document.querySelector(
@@ -310,15 +316,23 @@
         if (method === "image" && imageInput.files.length) {
           if (imageInput.files.length > 5) {
             showToast("Maximum 5 images allowed");
-            sendBtn.disabled = false;
-            btnText.textContent = "Send";
-            btnSpinner.classList.add("hidden");
+            resetBtn();
             return;
           }
           payload.image = [];
           for (let i = 0; i < imageInput.files.length; i++) {
-            const dataUrl = await readFileAsDataURL(imageInput.files[i]);
-            payload.image.push(dataUrl.split(",")[1]);
+            const file = imageInput.files[i];
+            // ✅ validasi mime
+            if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+              showToast("Only PNG, JPEG, and WEBP allowed");
+              resetBtn();
+              return;
+            }
+            const dataUrl = await readFileAsDataURL(file);
+            payload.image.push({
+              mime: file.type,
+              data: dataUrl.split(",")[1],
+            });
           }
         }
 
@@ -367,9 +381,7 @@
           showToast("Failed to connect to server");
         }
 
-        sendBtn.disabled = false;
-        btnText.textContent = "Send";
-        btnSpinner.classList.add("hidden");
+        resetBtn();
       });
 
       closePopup.addEventListener("click", () => {
